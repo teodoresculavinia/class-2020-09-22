@@ -13,6 +13,7 @@ Load **tidyverse**, **readxl* and **janitor** into your setup chunk.
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(readxl)
+install.packages("janitor")
 library(janitor)
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -40,8 +41,14 @@ sep_old <-
          title = course_title,
          name = course_name,
          department = course_department) %>% 
-  filter(u_grad > 10)
+  filter(u_grad > 10)  %>%
 
+  group_by(id, title, department, name) %>%
+  summarize( enrollment = sum(u_grad))
+
+view(sep_old)
+  
+  
 # But this is not correct! Look for Gov 50: Data. What do you see? What can you
 # do to clean it up?
 ```
@@ -53,6 +60,25 @@ sep_old <-
 
 **Prompt:** Read in and clean the new data, creating an object called `sep_new`. 
 
+```{r}
+sep_new <- 
+  read_excel("old_data/class_enrollment_summary_by_term_9-22-2020.xlsx", 
+             skip = 3) %>% 
+  clean_names() %>% 
+  filter(! is.na(course_title)) %>% 
+  select(-grad, -non_degree, -x_reg, -vus, -employee, 
+         -withdraw, -total, -instructor_full_name, -course_section_code) %>%
+  rename(id = course_id,
+         title = course_title,
+         name = course_name,
+         department = course_department) %>% 
+  filter(u_grad > 10)  %>%
+
+  group_by(id, title, department, name) %>%
+  summarize( enrollment = sum(u_grad), .groups = "drop")
+
+view(sep_new)
+```
 
 
 ### Scene 2
@@ -60,10 +86,26 @@ sep_old <-
 **Prompt:** Dean Amanda Claybaugh is concerned about the drop in undergradaute enrollment in some courses between September 1 and today. She wants you to analyze this issue. Before you dive into the details, provide some bullet points as to how Wisdom and Temperance apply to this situation. Every student should have several bullet points. Someone will be asked to share their screen and discuss.
 
 Before we start on the model, Wisdom suggests we should:
-
+ - What data we actually need (class enrollment from 9/1 to today)
+ - Understand what data we actually have (it is only to 9/18)
 
 After we have a model, Temperance suggests we should:
+ - Understanding that the average drop in undergraduate enrollment might not reflect each individual course
+ - It might be influenced by external factors such as COVID
+ - Assuming this table has all courses/ 
+ - We are not counting courses under 10
 
+```{r}
+
+joint_enrollment <-
+  inner_join(by=c("id", "department", "title", "name"), x= sep_old, y=sep_new, suffix=c(".old", ".new")) %>%
+
+  mutate(enrollment_difference = enrollment.new - enrollment.old)
+  
+View (joint_enrollment)
+
+
+```
 
 
 ### Scene 3
@@ -71,6 +113,11 @@ After we have a model, Temperance suggests we should:
 **Prompt:** Which classes had the biggest increases and decreases in undergraduate enrollments between September 1 and today? Make a graphic that shows the 5 biggest increases and decreases. Make it look nice.
 
 
+```{r}
+joint_enrollment <-
+  arrange(enrollment_difference) %>%
+  slice(1:5, 1072:1076)
+```
 
 
 
