@@ -115,8 +115,15 @@ View (joint_enrollment)
 
 ```{r}
 joint_enrollment <-
-  arrange(enrollment_difference) %>%
-  slice(1:5, 1072:1076)
+  inner_join(by=c("id", "department", "title", "name"), x= sep_old, y=sep_new, suffix=c(".old", ".new")) %>%
+
+  mutate(enrollment_difference = enrollment.new - enrollment.old) %>%
+  
+  arrange(enrollment_difference)
+
+view(joint_enrollment)
+
+slice(1:5)
 ```
 
 
